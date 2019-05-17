@@ -33,20 +33,12 @@ def shuffle_cards():
 
     return deck
 
-def give_cards(deck):
+def hit(player, deck):
     '''
-    Give the first cards to the machine and player
+    Give cards to any player
     '''
-    machine_hand = []
-    player_hand = []
-
-    machine_hand.append(deck.pop())
-    machine_hand.append(deck.pop())
-
-    player_hand.append(deck.pop())
-    player_hand.append(deck.pop())
-
-    return machine_hand, player_hand
+    player.append(deck.pop())
+    return player
     
 
 def show_hands(machine_hand, player_hand, player_turn=True):
@@ -65,11 +57,19 @@ def show_hands(machine_hand, player_hand, player_turn=True):
     for card in player_hand:
         print(card)
 
-#deck = shuffle_cards()
-#machine_hand, player_hand = give_cards(deck)
-#show_hands(machine_hand, player_hand)
-
 
 if __name__ == '__main__':
     balance = 100
+    machine_hand = []
+    player_hand = []
+
     bet_amount = bet(balance)
+    deck = shuffle_cards()
+    
+    #Give the first two cards to the player and machine
+    for x in range(2):
+        machine_hand = hit(machine_hand, deck)
+        player_hand = hit(player_hand, deck)
+
+    show_hands(machine_hand, player_hand)
+        
