@@ -55,10 +55,12 @@ def show_hands(machine_hand, player_hand, player_turn=True):
     else:
         for card in machine_hand:
             print(card)
+        print("\nDealer's total: " + str(sum_cards(machine_hand)))
 
     print('\n==== Player Hand ====')
     for card in player_hand:
         print(card)
+    print("\nYour total: " + str(sum_cards(player_hand)))
 
 def sum_cards(hand):
     '''
@@ -77,8 +79,71 @@ def sum_cards(hand):
     
     return total
 
-if __name__ == '__main__':
-    balance = 100
+def has_21(hand):
+    if sum_cards(hand) == 21:
+        print("\nTWENTY ONE!!!")
+        return True
+    
+    return False
+
+def end_game(bet_amount, balance, winner='machine'):
+    if winner == 'player':
+        print("CONGRATULATIONS!\nYOU WON!")
+        balance += bet_amount
+    else:
+        print("THE DEALER WON!")
+        balance -= bet_amount
+
+    return balance
+
+def round(deck, bet_amount, balance, player_hand, machine_hand):
+    # Player has 21
+    if has_21(player_hand):
+        balance = end_game(bet_amount, balance, winner='player')
+    else:
+        # Dealer has 21
+        if has_21(machine_hand):
+            balance = end_game(bet_amount, balance, winner='dealer')
+        else:
+            # Player want to STAY or HIT
+            response = ''
+            while response not in ['hit', 'h', 's', 'stay']:
+                response = input("Do you want to HIT or STAY?\n(hit or h / stay or s): ").lower()
+            
+            # HIT
+            if response in ['h', 'hit']:
+                player_hand = hit(player_hand, deck)
+                show_hands(machine_hand, player_hand)
+
+                score = sum_cards(player_hand)
+                if score > 21:
+                    balance = end_game(bet_amount, balance, winner='dealer')
+                else:
+                    balance = round(deck, bet_amount, balance, player_hand, machine_hand)
+            # STAY
+            else:
+                player_score = sum_cards(player_hand)
+                machine_score = sum_cards(machine_hand)
+
+                while True:
+                    machine_hand = hit(machine_hand, deck)
+                    show_hands(machine_hand, player_hand, player_turn=False)
+                    machine_score = sum_cards(machine_hand)
+
+                    if has_21(machine_hand):
+                        balance = end_game(bet_amount, balance, winner='dealer')
+                        break
+                    elif machine_score > player_score and machine_score < 21:
+                        balance = end_game(bet_amount, balance, winner='dealer')
+                        break
+                    elif machine_score > 21:
+                        balance = end_game(bet_amount, balance, winner='player')
+                        break
+                    
+    
+    return balance
+
+def replay(balance):
     machine_hand = []
     player_hand = []
 
@@ -89,6 +154,20 @@ if __name__ == '__main__':
     for x in range(2):
         machine_hand = hit(machine_hand, deck)
         player_hand = hit(player_hand, deck)
-    
+
     show_hands(machine_hand, player_hand)
-    print('TOTAL: ' + str(sum_cards(player_hand)))
+    balance = round(deck, bet_amount, balance, player_hand, machine_hand)
+
+    return balance
+
+if __name__ == '__main__':    
+    balance = 100
+    print('WELCOME TO THE BLACKJACK GAME!!!')
+    
+    play_again = 'Y'
+    while play_again == 'Y':
+        if balance == 0:
+            print("Your balance reached to 0!\nYou're broke! :(")
+        print(f"Here's your actual balance: {balance}" )
+        balance = replay(balance)
+        play_again = input('Do you want to play again? (Y/N) ').upper()
