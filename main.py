@@ -1,22 +1,30 @@
+'''
+author: Alisson Vargas
+
+A Blackjack Game
+'''
 import os
 import time
 from random import shuffle
 from cards import Card
 
 def clear_screen():
+    '''
+    Clear the screen based on OS
+    '''
     if os.name == 'posix':
         os.system('clear')
     else:
         os.system('cls')
 
-def bet(balance):
+def bet():
     '''
     Initial bet for the game
     '''
     while True:
         try:
             bet_amount = int(input('How much do you want to bet? '))
-            if bet_amount > 0 and bet_amount <= balance:
+            if 0 < bet_amount <= BALANCE:
                 print('Bet done!')
                 break
             else:
@@ -24,7 +32,7 @@ def bet(balance):
                 continue
         except ValueError:
             print('Please, type a number to bet!\n')
-        
+
     return bet_amount
 
 def shuffle_cards():
@@ -33,7 +41,7 @@ def shuffle_cards():
     '''
     suits = ['Spades', 'Hearts', 'Diamonds', 'Clubs']
     ranks = ['Ace', '2', '3', '4', '5', '6', '7', '8', '9',
-            '10', 'JACK', 'QUEEN', 'KING']
+             '10', 'JACK', 'QUEEN', 'KING']
 
     deck = []
     for suit in suits:
@@ -50,7 +58,6 @@ def hit(player, deck):
     '''
     player.append(deck.pop())
     return player
-    
 
 def show_hands(dealer_hand, player_hand, player_turn=True):
     '''
@@ -85,40 +92,48 @@ def sum_cards(hand):
     if total > 21 and aces != []:
         aces[0].value = 1
         total = sum_cards(hand)
-    
+
     return total
 
 def has_21(hand):
+    '''
+    Tests if the player has 21 and return a boolean
+    '''
     if sum_cards(hand) == 21:
         print("\nTWENTY ONE!!!")
         return True
-    
+
     return False
 
-def end_game(bet_amount, balance, winner='dealer'):
+def end_game(bet_amount, winner='dealer'):
+    '''
+    Congratulates the winner and return the balance
+    '''
+    global BALANCE
     if winner == 'player':
         print("CONGRATULATIONS!\nYOU WON!")
-        balance += bet_amount
+        BALANCE += bet_amount
     else:
         print("THE DEALER WON!")
-        balance -= bet_amount
+        BALANCE -= bet_amount
 
-    return balance
-
-def round(deck, bet_amount, balance, player_hand, dealer_hand):
-    # Player has 21
+def round(deck, bet_amount, player_hand, dealer_hand):
+    '''
+    Do all the round play and return balance
+    '''
+    # Player has 21 - Double the bet
     if has_21(player_hand):
-        balance = end_game(bet_amount, balance, winner='player')
+        end_game(bet_amount*2, winner='player')
     else:
         # Dealer has 21
         if has_21(dealer_hand):
-            balance = end_game(bet_amount, balance, winner='dealer')
+            end_game(bet_amount, winner='dealer')
         else:
             # Player want to STAY or HIT
             response = ''
             while response not in ['hit', 'h', 's', 'stay']:
-                response = input("Do you want to HIT or STAY?\n(hit or h / stay or s): ").lower()
-            
+                response = input("Do you want to HIT or STAY?\n(HIT or H / STAY or S): ").lower()
+
             # HIT
             if response in ['h', 'hit']:
                 player_hand = hit(player_hand, deck)
@@ -126,10 +141,10 @@ def round(deck, bet_amount, balance, player_hand, dealer_hand):
                 score = sum_cards(player_hand)
                 if score > 21:
                     show_hands(dealer_hand, player_hand, player_turn='False')
-                    balance = end_game(bet_amount, balance, winner='dealer')
-                else:    
+                    end_game(bet_amount, winner='dealer')
+                else:
                     show_hands(dealer_hand, player_hand)
-                    balance = round(deck, bet_amount, balance, player_hand, dealer_hand)
+                    round(deck, bet_amount, player_hand, dealer_hand)
             # STAY
             else:
                 player_score = sum_cards(player_hand)
@@ -140,57 +155,56 @@ def round(deck, bet_amount, balance, player_hand, dealer_hand):
                     dealer_score = sum_cards(dealer_hand)
 
                     if has_21(dealer_hand):
-                        balance = end_game(bet_amount, balance, winner='dealer')
+                        end_game(bet_amount, winner='dealer')
                         break
-                    elif dealer_score > player_score and dealer_score < 21:
-                        balance = end_game(bet_amount, balance, winner='dealer')
+                    elif player_score < dealer_score < 21:
+                        end_game(bet_amount, winner='dealer')
                         break
                     elif dealer_score > 21:
-                        balance = end_game(bet_amount, balance, winner='player')
+                        end_game(bet_amount, winner='player')
                         break
 
                     time.sleep(1)
                     dealer_hand = hit(dealer_hand, deck)
-    
-    return balance
 
-def replay(balance):
+def replay():
+    '''
+    replay the initial functions
+    '''
     dealer_hand = []
     player_hand = []
 
-    bet_amount = bet(balance)
+    bet_amount = bet()
 
     print('shuffling the cards...')
     time.sleep(1)
     clear_screen()
 
     deck = shuffle_cards()
-    
+
     #Give the first two cards to the player and dealer
-    for x in range(2):
+    for _ in range(2):
         dealer_hand = hit(dealer_hand, deck)
         player_hand = hit(player_hand, deck)
-    
+
     show_hands(dealer_hand, player_hand)
-    balance = round(deck, bet_amount, balance, player_hand, dealer_hand)
+    round(deck, bet_amount, player_hand, dealer_hand)
 
-    return balance
-
-if __name__ == '__main__':    
-    balance = 100
+if __name__ == '__main__': 
+    BALANCE = 100
 
     clear_screen()
     print("=======================================")
     print('==   WELCOME TO THE BLACKJACK GAME   ==')
     print("=======================================\n")
 
-    play_again = 'Y'
-    while play_again == 'Y' or play_again == '':
-        print(f"Here's your actual balance: {balance}")
-        
-        balance = replay(balance)
-        if balance == 0:
+    PLAY_AGAIN = 'Y'
+    while PLAY_AGAIN in ('Y', ''):
+        print(f"Here's your actual balance: {BALANCE}")
+
+        replay()
+        if BALANCE == 0:
             print("Your balance reached to 0!\nYou're broke! :(")
             break
-        play_again = input('\nDo you want to play again? (Y/n) ').upper()
+        PLAY_AGAIN = input('\nDo you want to play again? (Y/n) ').upper()
         clear_screen()
